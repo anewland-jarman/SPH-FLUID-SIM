@@ -59,16 +59,11 @@ class Ball {
 
 };
 var particles = [];
+var userball = new Ball();
 function loadAndRenderParticles(){
   slider = document.getElementById("particleSlider")
   num_of_particles = parseInt(slider.value,10);
-  slider = document.getElementById("cofrSlider");
-  cofr = parseInt(slider.value,10)/10;
-  slider = document.getElementById("elasticityslider");
-  elasticity = parseInt(slider.value,10)/10;
   document.getElementById("particleCount").textContent = num_of_particles;
-  document.getElementById("cofr").textContent = cofr;
-  document.getElementById("elasticity").textContent = elasticity;
   particles = [];
   for (let i = 0; i < num_of_particles; i++){
     var particle = new Ball();
@@ -76,6 +71,13 @@ function loadAndRenderParticles(){
     particle.pos.y += Math.random()*simHeight;
     particles.push(particle);
   }
+
+  userball.pos.x += Math.random()*simWidth;
+  userball.pos.y += Math.random()*simHeight;
+  userball.radius = 1;
+  userball.vel.x = 0;
+  userball.vel.y = 0;
+  particles.push(userball);
 }
 // drawing -------------------------------------------------------
 
@@ -120,6 +122,16 @@ function handleballcollisions(){
   };
 
 };
+
+function updateConsts(){
+  slider = document.getElementById("cofrSlider");
+  cofr = parseInt(slider.value,10)/10;
+  slider = document.getElementById("elasticityslider");
+  elasticity = parseInt(slider.value,10)/10;
+  document.getElementById("cofr").textContent = cofr;
+  document.getElementById("elasticity").textContent = elasticity;
+
+};
 function size(x,y){
   return Math.sqrt(x**2+y**2)
 }
@@ -131,6 +143,7 @@ function draw() {
 
   c.fillStyle = "#FF0000";
 
+
  
   for (let i=0; i < particles.length; i++){
     c.beginPath();	
@@ -138,18 +151,35 @@ function draw() {
     c.closePath();
     c.fill();		
   };		
-	
+
 }
 
+canvas.addEventListener('mousedown', event=>{
+  userBallSimulate(event.x,event.y)
+})
 // simulation ----------------------------------------------------
+
 
 function simulate() {
 
   for (let i=0; i < particles.length; i++){
     particles[i].simulate_ball();
   };
-  handleballcollisions()
+  userball.simulate_ball();
+  handleballcollisions();
 }
+
+function drawBall(x, y){
+// https://stackoverflow.com/questions/49711651/javascript-controlling-a-balls-movement-using-mouse
+};
+
+function userBallSimulate(x,y){
+  document.onmousedown = function(e){
+    userball.pos.x = cX(x);
+    userball.pos.y = cY(y);
+    console.log(userball.pos.x);
+  }
+};
 
 
 // make browser to call us repeatedly -----------------------------------
