@@ -11,7 +11,7 @@
         </style>
     </head>
     <body>
-        <canvas id="canvas" width="200" height="200">
+        <canvas onmousedown="simulate()" id="canvas" width="200" height="200">
             This text is displayed if your browser does not support HTML5 Canvas.
         </canvas>
         <div class="slider-container">
@@ -21,12 +21,12 @@
           
           <div class="slider-container">
             <label for="cofrSlider">Coefficient of Restitution: <span id="cofr">1</span></label>
-            <input type="range" min="0" max="10" value="10" onchange="loadAndRenderParticles()" id="cofrSlider">
+            <input type="range" min="0" max="10" value="10" onchange="updateConsts()" id="cofrSlider">
           </div>
           
           <div class="slider-container">
             <label for="elasticityslider">Bounciness of wall: <span id="elasticity">0.8</span></label>
-            <input type="range" min="0" max="20" value="8" onchange="loadAndRenderParticles()" id="elasticityslider">
+            <input type="range" min="0" max="20" value="8" onchange="updateConsts()" id="elasticityslider">
           </div>
           
         <button onClick="loadAndRenderParticles()">Apply</button>
