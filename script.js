@@ -1,4 +1,3 @@
-
 // canvas setup -------------------------------------------------------
 
 var canvas = document.getElementById("canvas");
@@ -59,7 +58,6 @@ class Ball {
 
 };
 var particles = [];
-var userball = new Ball();
 function loadAndRenderParticles(){
   slider = document.getElementById("particleSlider")
   num_of_particles = parseInt(slider.value,10);
@@ -69,15 +67,11 @@ function loadAndRenderParticles(){
     var particle = new Ball();
     particle.pos.x += Math.random()*simWidth;
     particle.pos.y += Math.random()*simHeight;
+    particle.vel.x = (Math.round(Math.random()) * 2 - 1)*10
+    particle.vel.y = (Math.round(Math.random()) * 2 - 1)*10
     particles.push(particle);
   }
 
-  userball.pos.x += Math.random()*simWidth;
-  userball.pos.y += Math.random()*simHeight;
-  userball.radius = 1;
-  userball.vel.x = 0;
-  userball.vel.y = 0;
-  particles.push(userball);
 }
 // drawing -------------------------------------------------------
 
@@ -98,12 +92,12 @@ function handleballcollisions(){
           var momentumP2i_y = p2.mass * p2.vel.y; 
           var Vr_x = p1.vel.x - p2.vel.x;
           var Vr_y = p1.vel.y - p2.vel.y;
-          var Vra_x = -cofr*Vr_x;
-          var Vra_y = -cofr*Vr_y;
-          p1.vel.x = (momentumP1i_x + momentumP2i_x + p2.mass*Vra_x)/(p1.mass + p2.mass);
-          p1.vel.y = (momentumP1i_y + momentumP2i_y + p2.mass*Vra_y)/(p1.mass + p2.mass);
-          p2.vel.x = -(momentumP1i_x + momentumP2i_x + p1.mass*Vra_x)/(p1.mass + p2.mass);
-          p2.vel.y = -(momentumP1i_y + momentumP2i_y + p1.mass*Vra_y)/(p1.mass + p2.mass);
+          var Vra_x = cofr*Vr_x;
+          var Vra_y = cofr*Vr_y;
+          p1.vel.x = (p2.mass*-Vra_x + momentumP1i_x + momentumP2i_x)/(p1.mass + p2.mass);
+          p1.vel.y = (p2.mass*-Vra_y + momentumP1i_y + momentumP2i_y)/(p1.mass + p2.mass);
+          p2.vel.x = (p1.mass*Vra_x + momentumP1i_x + momentumP2i_x)/(p1.mass + p2.mass);
+          p2.vel.y = (p1.mass*Vra_y + momentumP1i_y + momentumP2i_y)/(p1.mass + p2.mass);
 
           const displacementX = (dx/length) *(p1.radius + p2.radius - length)/2 + 1e-4;
           const displacementY = (dy/length) *(p1.radius + p2.radius - length)/2 + 1e-4;
@@ -120,7 +114,6 @@ function handleballcollisions(){
 
 
   };
-
 };
 
 function updateConsts(){
@@ -154,9 +147,7 @@ function draw() {
 
 }
 
-canvas.addEventListener('mousedown', event=>{
-  userBallSimulate(event.x,event.y)
-})
+
 // simulation ----------------------------------------------------
 
 
@@ -165,21 +156,11 @@ function simulate() {
   for (let i=0; i < particles.length; i++){
     particles[i].simulate_ball();
   };
-  userball.simulate_ball();
   handleballcollisions();
 }
 
-function drawBall(x, y){
-// https://stackoverflow.com/questions/49711651/javascript-controlling-a-balls-movement-using-mouse
-};
 
-function userBallSimulate(x,y){
-  document.onmousedown = function(e){
-    userball.pos.x = cX(x);
-    userball.pos.y = cY(y);
-    console.log(userball.pos.x);
-  }
-};
+
 
 
 // make browser to call us repeatedly -----------------------------------
