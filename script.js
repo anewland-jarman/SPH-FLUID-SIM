@@ -57,6 +57,8 @@ class Ball {
   }
 
 };
+
+
 var particles = [];
 function loadAndRenderParticles(){
   slider = document.getElementById("particleSlider")
@@ -116,6 +118,19 @@ function handleballcollisions(){
   };
 };
 
+
+// make a 2d list with coordinates in of i and j in cells like this [[01,02,03],[11,12,13]
+
+function gridgenerate(){
+  cells = []
+  for (let  i=0; i < simHeight; i++){
+    for (let j=0; j< simWidth; j++){
+
+    }
+  }
+
+}
+
 function updateConsts(){
   slider = document.getElementById("cofrSlider");
   cofr = parseInt(slider.value,10)/10;
@@ -145,6 +160,12 @@ function draw() {
     c.fill();		
   };		
 
+}
+
+function particletocell(position){
+  h=5
+  Xcell = position.x/h
+  Ycell = position.y/h
 }
 
 
