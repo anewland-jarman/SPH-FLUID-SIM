@@ -1,0 +1,7 @@
+div {
+    border: 1px solid black;
+    width: 100px;
+    height: 100px;
+}
+canvas, div {background-color: #F5F5F5;}
+canvas {border: 1px solid white;display: block;}
