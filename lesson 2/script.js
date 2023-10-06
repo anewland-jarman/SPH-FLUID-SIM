@@ -29,7 +29,7 @@ var particles = []
 const rows = canvas.width / height;
 const columns = canvas.height / height;
 const grid = [];
-var gravity = {x:0 , y:1};
+var gravity = {x:0 , y:-9.81};
 var timestep = 1/30;
 var elasticity = 1;
 class cell {
@@ -83,6 +83,7 @@ class cell {
     this.neighbors[2].velocity.y += divergence/s;
     this.neighbors[3].velocity.y -= divergence/s;
   }
+
 }  
 
 class Particle {
@@ -91,7 +92,7 @@ class Particle {
   this.pos = {x : 0, y : 0};
   this.vel = {x : 0, y : -0.01};
   this.mass =1000* 4/3 * Math.PI * (0.2)**3;
-  this.timestep = 1/30;
+  this.timestep = 1/60;
   //this.impulse = {x : this.mass*this.vel.x, y : this.mass*this.vel.y};
   }
   simulate_particle(){
@@ -127,10 +128,13 @@ particle_to_cell() {
 
 
 };
-
-
-
-
+/*
+function cell_to_particle(){
+  for (let i = 0; i<particles.length){
+    
+  }
+}
+*/
 
 function getCursorPosition(canvas,event){
   const rect = canvas.getBoundingClientRect();
@@ -138,10 +142,9 @@ function getCursorPosition(canvas,event){
   const y = event.clientY - rect.top;
   console.log("x: " + x + " y: " + y);
   var particle = new Particle()
-  particle.pos.x = x/ cScale;
-  particle.pos.y = y / cScale;
+  particle.pos.x = x;
+  particle.pos.y = y;
   particles.push(particle)
-  simulate();
 
 }
 function generate_grid(){
@@ -169,10 +172,9 @@ function draw(){
 };
 function physics(){
   for (let i=0; i < particles.length; i++){
-    console.log(particles[i].pos.x)
     particles[i].simulate_particle();
-    console.log(particles[i].pos.x)
   }
+  
 
 }
 function simulate(){
@@ -180,3 +182,4 @@ function simulate(){
   draw();
   requestAnimationFrame(simulate);
 }
+simulate();
