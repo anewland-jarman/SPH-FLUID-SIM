@@ -51,6 +51,7 @@ class cell {
   }
   // Function to compute and store neighbors (above, below, and sides)
   setNeighbors(grid) {
+    this.neighbors = []
     const rows = grid.length;
     const columns = grid[0].length;
     const x = this.cell.x;
@@ -117,24 +118,18 @@ class Particle {
       this.vel.y = -this.vel.y;
     }
   }
-particle_to_cell() {
-  this.Xcell = Math.round(this.pos.x / height);
-  this.Ycell = Math.round(this.pos.y / height);
-  this.dx = this.pos.x - this.Xcell * height;
-  this.dy = this.pos.y - this.Ycell * height;
-  this.pic = grid[this.Xcell][this.Ycell]; // Use "this" to access Xcell and Ycell
-  this.pic.velocity = this.velocity; // Also, use "this" to access velocity
-}
+  particle_to_cell() {
+    this.Xcell = Math.floor(this.pos.x / height);
+    this.Ycell = Math.floor(this.pos.y / height);
+    this.dx = this.pos.x - this.Xcell * height;
+    this.dy = this.pos.y - this.Ycell * height;
+    this.pic = grid[this.Xcell][this.Ycell]; // Use "this" to access Xcell and Ycell
+    this.pic.velocity = this.velocity; // Also, use "this" to access velocity
+  }
 
 
 };
-/*
-function cell_to_particle(){
-  for (let i = 0; i<particles.length){
-    
-  }
-}
-*/
+
 
 function getCursorPosition(canvas,event){
   const rect = canvas.getBoundingClientRect();
@@ -142,8 +137,8 @@ function getCursorPosition(canvas,event){
   const y = event.clientY - rect.top;
   console.log("x: " + x + " y: " + y);
   var particle = new Particle()
-  particle.pos.x = x;
-  particle.pos.y = y;
+  particle.pos.x = x/cScale;
+  particle.pos.y = simHeight - y/cScale;
   particles.push(particle)
 
 }
@@ -154,8 +149,16 @@ function generate_grid(){
       var cell1 = new cell(i, j);
       grid[i][j] = cell1;
       cell1.setNeighbors(grid); // Compute and store neighbors (above, below, and sides)
-      cell1.drawsquare();
     }
+  }
+}
+numh = 20;
+for (let i = 0; i < numh; i++){
+  for (let j = 0; j < numh; j++){
+    var particle = new Particle();
+    particle.pos.x = i*0.1;
+    particle.pos.y =j*0.1;
+    particles.push(particle);
   }
 }
 generate_grid();
@@ -173,8 +176,11 @@ function draw(){
 function physics(){
   for (let i=0; i < particles.length; i++){
     particles[i].simulate_particle();
+    //particles[i].particle_to_cell();
+    //particle[i].pic.setNeighbors(grid);
+    //particle[i].pic.solveIncompressibility();
+
   }
-  
 
 }
 function simulate(){
