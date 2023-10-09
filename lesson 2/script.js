@@ -1,8 +1,4 @@
 var canvas = document.getElementById("canvas");
-
-canvas.addEventListener('mousedown', function(e) {
-    getCursorPosition(canvas, e);
-})
 var c = canvas.getContext("2d");
 
 canvas.width = window.innerWidth - 20;
@@ -13,9 +9,6 @@ var cScale = Math.min(canvas.width, canvas.height) / simMinWidth;
 var simWidth = canvas.width / cScale;
 var simHeight = canvas.height / cScale;
 
-
-
-
 function cX(pos) {
   return pos.x*cScale;
 }
@@ -23,22 +16,23 @@ function cX(pos) {
 function cY(pos) {
   return canvas.height - pos.y * cScale;
 }
-
-var height = 10;
+var height = 100;
 var particles = []
-const rows = canvas.width / height;
-const columns = canvas.height / height;
+const rows = canvas.width/height;
+const columns = canvas.height/height;
 const grid = [];
 var gravity = {x:0 , y:-9.81};
 var timestep = 1/30;
 var elasticity = 1;
+var cofr = 1;
 class cell {
   constructor(x, y) {
     const Xc = x;
     const Yc  =y;
     this.cell = {x:Xc , y:Yc};
-    this.height = 10;
-    this.velocity = {x : 0, y : 0};
+    this.height = height;
+    this.velocity = {x : 2, y : 2};
+    this.particles = []
     this.neighbors = []; // Array to store neighbor cell instances
   }
   drawsquare() {
@@ -48,10 +42,17 @@ class cell {
       this.height,
       this.height
     );
+
+    c.fillText(
+      `(${this.cell.x}, ${this.cell.y})`,
+      this.height * this.cell.x + 2,
+      this.height * this.cell.y + 10
+    );
   }
+
+
   // Function to compute and store neighbors (above, below, and sides)
   setNeighbors(grid) {
-    this.neighbors = []
     const rows = grid.length;
     const columns = grid[0].length;
     const x = this.cell.x;
@@ -71,97 +72,91 @@ class cell {
       this.neighbors.push(grid[x][y +  1]); // Right
     }
   }
-  solveIncompressibility() {
+solveIncompressibility() {
+  if (
+    this.neighbors[0] &&
+    this.neighbors[1] &&
+    this.neighbors[2] &&
+    this.neighbors[3]
+  ) {
     const deltaX = this.neighbors[1].velocity.x - this.neighbors[0].velocity.x;
     const deltaY = this.neighbors[2].velocity.y - this.neighbors[3].velocity.y;
-  
 
     const divergence = deltaX + deltaY;
     const s = this.neighbors.length;
-  
-    this.neighbors[0].velocity.x += divergence/s;
-    this.neighbors[1].velocity.x -= divergence/s;
-    this.neighbors[2].velocity.y += divergence/s;
-    this.neighbors[3].velocity.y -= divergence/s;
+
+    this.neighbors[0].velocity.x += divergence / s;
+    this.neighbors[1].velocity.x -= divergence / s;
+    this.neighbors[2].velocity.y += divergence / s;
+    this.neighbors[3].velocity.y -= divergence / s;
   }
+}
 
 }  
+
 
 class Particle {
   constructor(){
   this.radius = 0.2;
   this.pos = {x : 0, y : 0};
-  this.vel = {x : 0, y : -0.01};
+  this.velocity = {x : 10, y : 10};
   this.mass =1000* 4/3 * Math.PI * (0.2)**3;
   this.timestep = 1/60;
   //this.impulse = {x : this.mass*this.vel.x, y : this.mass*this.vel.y};
   }
   simulate_particle(){
-    this.vel.x += gravity.x * this.timestep;
-    this.vel.y += gravity.y * this.timestep;
-    this.pos.x += this.vel.x * this.timestep;
-    this.pos.y += this.vel.y * this.timestep;
+    this.velocity.x += gravity.x * this.timestep;
+    this.velocity.y += gravity.y * this.timestep;
+    this.pos.x += this.velocity.x * this.timestep;
+    this.pos.y += this.velocity.y * this.timestep;
     if (this.pos.x - this.radius < 0.0) {
       this.pos.x = 0.0 + this.radius;
-      this.vel.x = -this.vel.x;
+      this.velocity.x = -this.velocity.x;
     }
     if (this.pos.x + this.radius > simWidth) {
       this.pos.x = simWidth - this.radius;
-      this.vel.x = -this.vel.x ;
+      this.velocity.x = -this.velocity.x ;
     }
     if (this.pos.y - this.radius < 0.0) {
       this.pos.y = 0.0 + this.radius;
-      this.vel.y = -this.vel.y;
+      this.velocity.y = -this.velocity.y;
     }
     if (this.pos.y + this.radius> simHeight){
       this.pos.y = simHeight - this.radius;
-      this.vel.y = -this.vel.y;
+      this.velocity.y = -this.velocity.y;
     }
   }
   particle_to_cell() {
-    this.Xcell = Math.floor(this.pos.x / height);
-    this.Ycell = Math.floor(this.pos.y / height);
+    this.Xcell = Math.floor(cX(this.pos)/height);
+    this.Ycell = Math.floor(cY(this.pos)/height);
     this.dx = this.pos.x - this.Xcell * height;
     this.dy = this.pos.y - this.Ycell * height;
-    this.pic = grid[this.Xcell][this.Ycell]; // Use "this" to access Xcell and Ycell
-    this.pic.velocity = this.velocity; // Also, use "this" to access velocity
+    this.pic = grid[this.Xcell][this.Ycell];// Use "this" to access Xcell and Ycell
+    this.pic.cell = {x:this.Xcell, y:this.Ycell};
+    this.pic.velocity.x =0
+    this.pic.velocity.y = 0
+    this.pic.velocity.x += this.velocity.x;
+    this.pic.velocity.y += this.velocity.y;
+    //console.log(this.Ycell,this.pos.y,height,this.pic);
+
   }
+
 
 
 };
 
-
-function getCursorPosition(canvas,event){
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  console.log("x: " + x + " y: " + y);
-  var particle = new Particle()
-  particle.pos.x = x/cScale;
-  particle.pos.y = simHeight - y/cScale;
-  particles.push(particle)
-
-}
 function generate_grid(){
   for (let i = 0; i < rows; i++) {
     grid[i] = [];
     for (let j = 0; j < columns; j++) {
-      var cell1 = new cell(i, j);
+      var cell1 = new cell(i,j);
       grid[i][j] = cell1;
-      cell1.setNeighbors(grid); // Compute and store neighbors (above, below, and sides)
+      //cell1.drawsquare();
     }
   }
 }
-numh = 20;
-for (let i = 0; i < numh; i++){
-  for (let j = 0; j < numh; j++){
-    var particle = new Particle();
-    particle.pos.x = i*0.1;
-    particle.pos.y =j*0.1;
-    particles.push(particle);
-  }
-}
-generate_grid();
+
+
 function draw(){
   c.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -173,16 +168,31 @@ function draw(){
     c.fill();		
   };		
 };
+
 function physics(){
   for (let i=0; i < particles.length; i++){
-    particles[i].simulate_particle();
-    //particles[i].particle_to_cell();
-    //particle[i].pic.setNeighbors(grid);
-    //particle[i].pic.solveIncompressibility();
 
+    particles[i].particle_to_cell();
+    particles[i].pic.setNeighbors(grid);
+    particles[i].pic.solveIncompressibility();
+    particles[i].simulate_particle();
   }
+  
 
 }
+
+for (var i = 0; i < 10; i++) {
+  for (var j = 0; j < 10; j++) {
+    var p1 = new Particle(); // Create a new particle
+    // Adjust the position of the particle to make them more tightly packed
+    p1.pos = { x: i * 0.2, y: j * 0.2 }; // You can adjust the factor (e.g., 10) as needed
+    particles.push(p1);
+  }
+}
+
+
+
+generate_grid();
 function simulate(){
   physics();
   draw();
