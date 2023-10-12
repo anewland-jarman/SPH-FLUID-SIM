@@ -1,5 +1,3 @@
-// canvas setup -------------------------------------------------------
-
 var canvas = document.getElementById("canvas");
 var c = canvas.getContext("2d");
 
@@ -12,184 +10,112 @@ var simWidth = canvas.width / cScale;
 var simHeight = canvas.height / cScale;
 
 function cX(pos) {
-  return pos.x * cScale;
+  return pos.x*cScale;
 }
 
 function cY(pos) {
   return canvas.height - pos.y * cScale;
 }
+var radius = 0.2
+var height = 2*radius;
+var particles = []
+const rows = simWidth/height;
+const columns = simHeight/height;
+const grid = [];
+var gravity = {x:0 , y:-9.81};
+var timestep = 1/30;
+var elasticity = 1;
+var cofr = 1;
 
-// scene -------------------------------------------------------
 
-var gravity = { x: 0, y: -9.81};
-var timeStep = 1.0 / 60;
-var cofr = 0.7;
-var elasticity = 0.8;
-class Ball {
-  constructor(){
-  this.radius = 0.2;
-  this.pos = {x : 0, y : 0};
-  this.vel = {x : 10.0, y : 15.0};
-  this.mass =1000* 4/3 * Math.PI * (0.2)**3;
-  this.impulse = {x : this.mass*this.vel.x, y : this.mass*this.vel.y};
+
+class Cell {
+  constructor(x, y) {
+    const Xc = x;
+    const Yc  =y;
+    this.cell = {x:Xc , y:Yc};
+    this.height = height;
+    this.particles = [];
+    this.neighbors = []; 
   }
-  simulate_ball(){
-    this.vel.x += gravity.x * timeStep;
-    this.vel.y += gravity.y * timeStep;
-    this.pos.x += this.vel.x * timeStep;
-    this.pos.y += this.vel.y * timeStep;
+
+}  
+
+
+class Particle {
+  constructor(){
+  this.radius = radius;
+  this.pos = {x : 0, y : 0};
+  this.velocity = {x : 10, y : 10};
+  this.mass =1000* 4/3 * Math.PI * (0.2)**3;
+  this.timestep = 1/60;
+  }
+  simulate_particle(){
+    this.velocity.x += gravity.x * this.timestep;
+    this.velocity.y += gravity.y * this.timestep;
+    this.pos.x += this.velocity.x * this.timestep;
+    this.pos.y += this.velocity.y * this.timestep;
     if (this.pos.x - this.radius < 0.0) {
       this.pos.x = 0.0 + this.radius;
-      this.vel.x = -elasticity*this.vel.x;
+      this.velocity.x = -this.velocity.x;
     }
     if (this.pos.x + this.radius > simWidth) {
       this.pos.x = simWidth - this.radius;
-      this.vel.x = -elasticity*this.vel.x ;
+      this.velocity.x = -this.velocity.x ;
     }
     if (this.pos.y - this.radius < 0.0) {
       this.pos.y = 0.0 + this.radius;
-      this.vel.y = -elasticity*this.vel.y;
+      this.velocity.y = -this.velocity.y;
     }
     if (this.pos.y + this.radius> simHeight){
       this.pos.y = simHeight - this.radius;
-      this.vel.y = -elasticity*this.vel.y;
+      this.velocity.y = -this.velocity.y;
     }
   }
 
 };
 
 
-var particles = [];
-function loadAndRenderParticles(){
-  slider = document.getElementById("particleSlider")
-  num_of_particles = parseInt(slider.value,10);
-  document.getElementById("particleCount").textContent = num_of_particles;
-  particles = [];
-  for (let i = 0; i < num_of_particles; i++){
-    var particle = new Ball();
-    particle.pos.x += Math.random()*simWidth;
-    particle.pos.y += Math.random()*simHeight;
-    particle.vel.x = (Math.round(Math.random()) * 2 - 1)*10
-    particle.vel.y = (Math.round(Math.random()) * 2 - 1)*10
-    particles.push(particle);
-  }
-
-}
-// drawing -------------------------------------------------------
-
-function handleballcollisions(){
-  for (let i = 0; i < particles.length; i++) {
-    for ( let j = 0; j < particles.length; j ++){
-      if (j != i ){
-        var dx = particles[i].pos.x -particles[j].pos.x;
-        var dy = particles[i].pos.y -particles[j].pos.y;
-        var angle = Math.atan2(dy,dx);
-        var length =  Math.sqrt(dx**2 + dy**2);
-        if (length + 1e-1 < particles[i].radius + particles[j].radius){
-          var p1 = particles[i];
-          var p2 = particles[j];
-          var momentumP1i_x = p1.mass * p1.vel.x;
-          var momentumP1i_y = p1.mass * p1.vel.y;
-          var momentumP2i_x = p2.mass * p2.vel.x;
-          var momentumP2i_y = p2.mass * p2.vel.y; 
-          var Vr_x = p1.vel.x - p2.vel.x;
-          var Vr_y = p1.vel.y - p2.vel.y;
-          var Vra_x = cofr*Vr_x;
-          var Vra_y = cofr*Vr_y;
-          p1.vel.x = (p2.mass*-Vra_x + momentumP1i_x + momentumP2i_x)/(p1.mass + p2.mass);
-          p1.vel.y = (p2.mass*-Vra_y + momentumP1i_y + momentumP2i_y)/(p1.mass + p2.mass);
-          p2.vel.x = (p1.mass*Vra_x + momentumP1i_x + momentumP2i_x)/(p1.mass + p2.mass);
-          p2.vel.y = (p1.mass*Vra_y + momentumP1i_y + momentumP2i_y)/(p1.mass + p2.mass);
-
-          const displacementX = (dx/length) *(p1.radius + p2.radius - length)/2 + 1e-4;
-          const displacementY = (dy/length) *(p1.radius + p2.radius - length)/2 + 1e-4;
-          p1.pos.x += displacementX;
-          p1.pos.y += displacementY;
-          p2.pos.x -= displacementX;
-          p2.pos.y -= displacementY;
-          
 
 
-        };
-      };
-    };
-
-
-  };
-};
-
-
-// make a 2d list with coordinates in of i and j in cells like this [[01,02,03],[11,12,13]
-
-function gridgenerate(){
-  cells = []
-  for (let  i=0; i < simHeight; i++){
-    for (let j=0; j< simWidth; j++){
-
-    }
-  }
-
-}
-
-function updateConsts(){
-  slider = document.getElementById("cofrSlider");
-  cofr = parseInt(slider.value,10)/10;
-  slider = document.getElementById("elasticityslider");
-  elasticity = parseInt(slider.value,10)/10;
-  document.getElementById("cofr").textContent = cofr;
-  document.getElementById("elasticity").textContent = elasticity;
-
-};
-function size(x,y){
-  return Math.sqrt(x**2+y**2)
-}
-function dotproduct(a,b){
-  return a.x*b.x + a.y*b.y
-}
-function draw() {
+function draw(){
   c.clearRect(0, 0, canvas.width, canvas.height);
 
   c.fillStyle = "#FF0000";
-
-
- 
   for (let i=0; i < particles.length; i++){
     c.beginPath();	
     c.arc(cX(particles[i].pos), cY(particles[i].pos), cScale * particles[i].radius, 0.0, 2.0 * Math.PI); 
     c.closePath();
     c.fill();		
   };		
-
-}
-
-function particletocell(position){
-  h=5
-  Xcell = position.x/h
-  Ycell = position.y/h
-}
-
-
-// simulation ----------------------------------------------------
-
-
-function simulate() {
-
-  for (let i=0; i < particles.length; i++){
-    particles[i].simulate_ball();
-  };
-  handleballcollisions();
-}
-
-
-
-
-
-// make browser to call us repeatedly -----------------------------------
-
-function update() {
-  simulate();
-  draw();
-  requestAnimationFrame(update);
 };
 
-update();
+function generategrid(){
+    for (let i = 0; i < rows; i++){
+        for (let j = 0; j < columns; j++){
+            grid.push(new Cell);
+        }
+    }
+}
+function sortparticleindices(){
+    linkedlist = [];
+    for (let i = 0 ; i<particles.length; i++){
+        
+    }
+}
+function physics(){
+  
+
+}
+
+
+
+function simulate(){
+  physics();
+  draw();
+  requestAnimationFrame(simulate);
+}
+
+
+console.log(grid);
+//ssimulate();
