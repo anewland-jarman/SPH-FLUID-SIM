@@ -1,3 +1,4 @@
+//https://stackoverflow.com/questions/74452866/how-preview-a-html-file-github-codespaces
 var canvas = document.getElementById("canvas");
 var c = canvas.getContext("2d");
 
@@ -19,9 +20,14 @@ function cY(pos) {
   return canvas.height - pos.y * cScale;
 }
 num_particles = 100;
-positions = [];
-velocitys = [];
-
+var particles = [];
+class Particle {
+  constructor(x,y){
+    this.radius = 0.2;
+    this.position = new Vector(x,y);
+    this.velocity = new Vector(0,0);
+  }
+}
 radius = 0.2;
 collisionDamping = 1;
 particleSpacing = 0.1;
@@ -37,6 +43,17 @@ function smoothingKernel(r,h){
   }
   return smoothingvalue
 }
+
+function calculateDensity(samplepoint){
+  mass = 1;
+  density = 0;
+  for (let i = 0; i < num_particles; i++){
+    dist = samplepoint - particles[i].position
+    density += mass*smoothingKernel(dist,smoothingRadius);
+
+  }
+  console.log(density);
+}
 function setupParticlesGrid() {
   particlesPerRow = Math.ceil(Math.sqrt(num_particles));
   particlesPerCol = Math.ceil(num_particles / particlesPerRow);
@@ -47,8 +64,8 @@ function setupParticlesGrid() {
     for (let col = 0; col < particlesPerCol; col++) {
       x = col * spacing + simHeight / 2;
       y = row * spacing + simWidth / 2;
-      positions[i] = new Vector(x, y);
-      velocitys[i] = new Vector(0, 0);
+      particles[i].position = new Vector(x, y);
+      particles[i].velocity = new Vector(0, 0);
       i++;
     }
   }
@@ -57,8 +74,10 @@ function setupParticlesRandom(){
   for (let i =0 ; i < num_particles; i++){
     x = simWidth*Math.random();
     y= simHeight*Math.random();
-    positions[i] = new Vector(x, y);
-    velocitys[i] = new Vector(0, 0);
+    var particle = new Particle(x,y);
+    particles[i] = particle;
+    particles[i].position = new Vector(x, y);
+    particles[i].velocity = new Vector(0, 0);
   }
 }
 
@@ -71,7 +90,7 @@ function draw(){
   c.fillStyle = "#005EB8";
   for (let i=0; i < num_particles; i++){
     c.beginPath();	
-    c.arc(cX(positions[i]), cY(positions[i]), cScale *radius, 0.0, 2.0 * Math.PI); 
+    c.arc(cX(particles[i].position), cY(particles[i].position), cScale *radius, 0.0, 2.0 * Math.PI); 
     c.closePath();
     c.fill();		
   };		
@@ -79,25 +98,26 @@ function draw(){
 
 function physics(){
   for (let i = 0; i < num_particles; i ++){
-    velocitys[i].x +=  gravity.x * timestep;
-    velocitys[i].y +=  gravity.y * timestep;
-    positions[i].x  += velocitys[i].x * timestep ;
-    positions[i].y  += velocitys[i].y * timestep;
-    if (positions[i].x + this.radius > simWidth) {
-      positions[i].x = simWidth - this.radius;
-      velocitys[i].x = -collisionDamping*velocitys[i].x ;
+    particles[i].velocity.x +=  gravity.x * timestep;
+    particles[i].velocity.y +=  gravity.y * timestep;
+    particles[i].position.x  += particles[i].velocity.x * timestep ;
+    particles[i].position.y  += particles[i].velocity.y * timestep;
+    if (particles[i].position.x + this.radius > simWidth) {
+      particles[i].position.x = simWidth - this.radius;
+      particles[i].velocity.x = -collisionDamping*particles[i].velocity.x ;
     }
-    if (positions[i].y - this.radius < 0.0) {
-      positions[i].y = 0.0 + this.radius;
-      velocitys[i].y = -collisionDamping*velocitys[i].y;
+    if (particles[i].position.y - this.radius < 0.0) {
+      particles[i].position.y = 0.0 + this.radius;
+      particles[i].velocity.y = -collisionDamping*particles[i].velocity.y;
     }
-    if (positions[i].y + this.radius> simHeight){
-      positions[i].y = simHeight - this.radius;
-      velocitys[i].y = -collisionDamping*velocitys[i].y;
+    if (particles[i].position.y + this.radius> simHeight){
+      particles[i].position.y = simHeight - this.radius;
+      particles[i].velocity.y = -collisionDamping*particles[i].velocity.y;
     }
   }
 }
-console.log(smoothingKernel(2,5));
+console.log("by");
+calculateDensity(new Vector(2,3));
 setupParticlesRandom();
 function simulate(){
   physics();
