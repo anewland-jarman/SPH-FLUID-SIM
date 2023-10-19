@@ -19,7 +19,7 @@ function cX(pos) {
 function cY(pos) {
   return canvas.height - pos.y * cScale;
 }
-num_particles = 100;
+var num_particles = 100;
 var particles = [];
 class Particle {
   constructor(x,y){
@@ -31,7 +31,7 @@ class Particle {
 radius = 0.2;
 collisionDamping = 1;
 particleSpacing = 0.1;
-smoothingRadius = 10;
+smoothingRadius = 1;
 
 function smoothingKernel(r,h){
   let smoothingvalue = 0.0
@@ -48,7 +48,7 @@ function calculateDensity(samplepoint){
   mass = 1;
   density = 0;
   for (let i = 0; i < num_particles; i++){
-    dist = samplepoint - particles[i].position
+    dist = samplepoint.distanceFrom(particles[i].position);
     density += mass*smoothingKernel(dist,smoothingRadius);
 
   }
@@ -62,9 +62,10 @@ function setupParticlesGrid() {
 
   for (let row = 0; row < particlesPerRow; row++) {
     for (let col = 0; col < particlesPerCol; col++) {
-      x = col * spacing + simHeight / 2;
-      y = row * spacing + simWidth / 2;
-      particles[i].position = new Vector(x, y);
+      x = col * spacing + simWidth / 2;
+      y = row * spacing + simHeight / 2;
+      var particle = new Particle(x,y);
+      particles[i] = particle;
       particles[i].velocity = new Vector(0, 0);
       i++;
     }
@@ -76,7 +77,6 @@ function setupParticlesRandom(){
     y= simHeight*Math.random();
     var particle = new Particle(x,y);
     particles[i] = particle;
-    particles[i].position = new Vector(x, y);
     particles[i].velocity = new Vector(0, 0);
   }
 }
@@ -117,8 +117,9 @@ function physics(){
   }
 }
 console.log("by");
-calculateDensity(new Vector(2,3));
-setupParticlesRandom();
+setupParticlesGrid();
+calculateDensity(new Vector(simWidth/2,simHeight/2));
+
 function simulate(){
   physics();
   draw();
