@@ -22,9 +22,21 @@ num_particles = 100;
 positions = [];
 velocitys = [];
 
-radius = 0.2
+radius = 0.2;
 collisionDamping = 1;
 particleSpacing = 0.1;
+smoothingRadius = 10;
+
+function smoothingKernel(r,h){
+  let smoothingvalue = 0.0
+  if (r>=0 && r<=h){
+    smoothingvalue = 1-1.5*(r/h)**2 + 0.75*(r/h)**3
+  }
+  else if (r>=h && r<=2*h){
+    smoothingvalue = 0.25*(2-r/h)**3
+  }
+  return smoothingvalue
+}
 function setupParticlesGrid() {
   particlesPerRow = Math.ceil(Math.sqrt(num_particles));
   particlesPerCol = Math.ceil(num_particles / particlesPerRow);
@@ -85,8 +97,8 @@ function physics(){
     }
   }
 }
-
-setupParticlesRandom()
+console.log(smoothingKernel(2,5));
+setupParticlesRandom();
 function simulate(){
   physics();
   draw();
