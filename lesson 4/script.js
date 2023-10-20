@@ -19,7 +19,7 @@ function cX(pos) {
 function cY(pos) {
   return canvas.height - pos.y * cScale;
 }
-var num_particles = 100;
+var num_particles = 2;
 var particles = [];
 class Particle {
   constructor(x,y){
@@ -31,7 +31,7 @@ class Particle {
 radius = 0.2;
 collisionDamping = 1;
 particleSpacing = 0.1;
-smoothingRadius = 1;
+smoothingLength = 2*radius;
 
 function smoothingKernel(r,h){
   let smoothingvalue = 0.0
@@ -44,15 +44,33 @@ function smoothingKernel(r,h){
   return smoothingvalue
 }
 
-function calculateDensity(samplepoint){
+function calculateDensity(samplepoint,smoothinglength){
   mass = 1;
   density = 0;
   for (let i = 0; i < num_particles; i++){
     dist = samplepoint.distanceFrom(particles[i].position);
-    density += mass*smoothingKernel(dist,smoothingRadius);
+    density += mass*smoothingKernel(dist,smoothinglength);
 
   }
-  console.log(density);
+  return density
+}
+
+function calculateSmoothingLength(density){
+  return 1.2*(1/density)**0.5
+}
+function truedensity(samplepoint,smoothinglength){
+  threshold = 0.001
+  lastvalue = -1
+  thisvalue = 1;
+  density = 1;
+  while (Math.round(thisvalue + Number.EPSILON)*100/100 != Math.round(lastvalue + Number.EPSILON)*10000/10000){
+    lastvalue = thisvalue;
+    density = calculateDensity(samplepoint,smoothinglength);
+    smoothinglength = calculateSmoothingLength(density);
+    thisvalue = density;
+  }
+
+  return density;
 }
 function setupParticlesGrid() {
   particlesPerRow = Math.ceil(Math.sqrt(num_particles));
@@ -118,7 +136,7 @@ function physics(){
 }
 console.log("by");
 setupParticlesGrid();
-calculateDensity(new Vector(simWidth/2,simHeight/2));
+console.log(truedensity(new Vector(simWidth/2,simHeight/2)));
 
 function simulate(){
   physics();
