@@ -10,8 +10,11 @@ var cScale = Math.min(canvas.width, canvas.height) / simMinWidth;
 var simWidth = canvas.width / cScale;
 var simHeight = canvas.height / cScale;
 
-gravity = new Vector(0,0)
-timestep = 1/30;
+var gravity = new Vector(0,-9.81)
+var timestep = 1/30;
+var restdensity = 1000;
+var restpressure = 1000;
+var k=5;
 function cX(pos) {
   return pos.x*cScale;
 }
@@ -26,7 +29,11 @@ class Particle {
     this.radius = 0.2;
     this.position = new Vector(x,y);
     this.velocity = new Vector(0,0);
-    this.density = 0
+    this.density = 0;
+    this.smoothingLength = 2 * this.radius;
+  }
+  updatePressure(self){
+    this.pressure = (restpressure*(this.density/restdensity)**k-1);
   }
 }
 radius = 0.2;
@@ -42,7 +49,19 @@ function smoothingKernel(r,h){
   else if (r>=h && r<=2*h){
     smoothingvalue = 0.25*(2-r/h)**3
   }
-  return smoothingvalue
+  return (1/(Math.PI*h**3))*smoothingvalue
+}
+
+function smoothingKernelDerivative(r,h){
+  let smoothinggradient = 0.0
+  if (r>=0 && r<=h){
+    smoothinggradient = (3*r*(3*r-4*h))/(4*h**3);
+  }
+  else if (r>=h && r<=2*h){
+    smoothinggradient = - (3*(r-2*h)**2)/(4*h**3);
+  }
+  return smoothinggradient
+
 }
 
 function calculateDensity(particle,smoothingLength){
@@ -51,7 +70,9 @@ function calculateDensity(particle,smoothingLength){
   for (let i = 0; i < num_particles; i++){
     var position = particle.position;
     dist = position.distanceFrom(particles[i].position);
-    density += mass*smoothingKernel(dist,smoothingLength);
+    if (dist != 0){
+      density += mass*smoothingKernel(dist,smoothingLength);
+    }
   }
   return density
 }
@@ -72,7 +93,7 @@ function truedensity(particle, initialSmoothingLength) {
     // Update smoothing length based on last density
     smoothingLength = calculateSmoothingLength(lastDensity);
   } while (Math.abs(density - lastDensity) > threshold);
-
+  particle.smoothingLength = smoothingLength;
   return density;
 }
 
@@ -119,6 +140,7 @@ function draw(){
 };
 
 function physics(){
+  updateProperties();
   for (let i = 0; i < num_particles; i ++){
     particles[i].velocity.x +=  gravity.x * timestep;
     particles[i].velocity.y +=  gravity.y * timestep;
@@ -139,17 +161,28 @@ function physics(){
   }
 }
 
-function updateDensitys(){
-  for (let i = 0; i < num_particles; i ++){
-    var particle = particles[i]
-    particle.density = truedensity(particle,smoothingLength);
-    console.log(particle.density);
+function updateProperties() {
+  for (let i = 0; i < num_particles; i++) {
+    var particle = particles[i];
+    particle.density = truedensity(particle, smoothingLength);
+    particle.updatePressure();
+    
+
   }
 }
 
+function pressuregradient(particle){
+  gradient = 0;
+  for (let i = 0 ; i < num_particles; i++){
+    dist = (particle.position).distanceFrom(particles[i].position);
+    gradient += (particle.pressure/(particle.density**2) + particles[i].pressure/(particles[i].density)**2)*smoothingKernelDerivative(dist,particle.smoothingLength);
+  }
+  return gradient
 
-setupParticlesGrid();
-updateDensitys();
+}
+
+setupParticlesRandom();
+
 
 function simulate(){
   physics();
