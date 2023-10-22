@@ -19,13 +19,14 @@ function cX(pos) {
 function cY(pos) {
   return canvas.height - pos.y * cScale;
 }
-var num_particles = 2;
+var num_particles = 100;
 var particles = [];
 class Particle {
   constructor(x,y){
     this.radius = 0.2;
     this.position = new Vector(x,y);
     this.velocity = new Vector(0,0);
+    this.density = 0
   }
 }
 radius = 0.2;
@@ -44,13 +45,13 @@ function smoothingKernel(r,h){
   return smoothingvalue
 }
 
-function calculateDensity(samplepoint,smoothinglength){
+function calculateDensity(particle,smoothingLength){
   mass = 1;
-  density = 0;
+  let density = 0;
   for (let i = 0; i < num_particles; i++){
-    dist = samplepoint.distanceFrom(particles[i].position);
-    density += mass*smoothingKernel(dist,smoothinglength);
-
+    var position = particle.position;
+    dist = position.distanceFrom(particles[i].position);
+    density += mass*smoothingKernel(dist,smoothingLength);
   }
   return density
 }
@@ -58,20 +59,23 @@ function calculateDensity(samplepoint,smoothinglength){
 function calculateSmoothingLength(density){
   return 1.2*(1/density)**0.5
 }
-function truedensity(samplepoint,smoothinglength){
-  threshold = 0.001
-  lastvalue = -1
-  thisvalue = 1;
-  density = 1;
-  while (Math.round(thisvalue + Number.EPSILON)*100/100 != Math.round(lastvalue + Number.EPSILON)*10000/10000){
-    lastvalue = thisvalue;
-    density = calculateDensity(samplepoint,smoothinglength);
-    smoothinglength = calculateSmoothingLength(density);
-    thisvalue = density;
-  }
+
+function truedensity(particle, initialSmoothingLength) {
+  const threshold = 0.001;
+  let lastDensity = 0;
+  let density = 1;
+  let smoothingLength = initialSmoothingLength;
+
+  do {
+    lastDensity = density;
+    density = calculateDensity(particle, smoothingLength);
+    // Update smoothing length based on last density
+    smoothingLength = calculateSmoothingLength(lastDensity);
+  } while (Math.abs(density - lastDensity) > threshold);
 
   return density;
 }
+
 function setupParticlesGrid() {
   particlesPerRow = Math.ceil(Math.sqrt(num_particles));
   particlesPerCol = Math.ceil(num_particles / particlesPerRow);
@@ -134,9 +138,18 @@ function physics(){
     }
   }
 }
-console.log("by");
+
+function updateDensitys(){
+  for (let i = 0; i < num_particles; i ++){
+    var particle = particles[i]
+    particle.density = truedensity(particle,smoothingLength);
+    console.log(particle.density);
+  }
+}
+
+
 setupParticlesGrid();
-console.log(truedensity(new Vector(simWidth/2,simHeight/2)));
+updateDensitys();
 
 function simulate(){
   physics();
