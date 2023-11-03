@@ -36,8 +36,8 @@ class Particle {
   constructor(x,y){
     this.radius = radius;
     this.position = new Vector(x,y);
-    this.xi = Math.floor(this.position.x/gridspacing);
-    this.yi = Math.floor(this.position.y/gridspacing);
+    this.xi = Math.floor(x/gridspacing);
+    this.yi = Math.floor(y/gridspacing);
     this.velocity = new Vector(0,0);
     this.acceleration = fluidSimulator.gravity;
     this.mass = 1000*(4/3)*(Math.PI)*(this.radius)**3;            // Particle mass
@@ -45,14 +45,18 @@ class Particle {
     this.pressure = restpressure;
     this.pressureGradientX = 0;
     this.pressureGradientY = 0;
+    this.pressureForceX = 0;
+    this.pressureForceY = 0;
     this.xi = Math.floor(this.position.x/gridspacing);
     this.yi = Math.floor(this.position.y/gridspacing);
     this.cell = new Vector(this.xi,this.yi);
+    this.index = this.cell.x * numY + this.cell.y;
   }
   updateCell(){
     this.xi = Math.floor(this.position.x/gridspacing);
     this.yi = Math.floor(this.position.y/gridspacing);
     this.cell = new Vector(this.xi,this.yi);
+    this.index = this.cell.x * numY + this.cell.y;
   }
 
 
@@ -105,17 +109,15 @@ class Grid{
         directions = directions.filter(direction => direction.x !== 1 && direction.y !== 1);
     }
   directions.forEach(direction => neighbours.push(particle.cell.add(direction)));
-  for (const cell of neighbours){
-    let newneighbours = []
-    //console.log(cell)
-    let index = cell.x * numY + cell.y;
-    //console.log(simulationgrid.grid[index])
-    for (let i=0; i<simulationgrid.grid[index].length; i++){
-      newneighbours.push(neighbours[index][i])
-      //console.log(neighbours[index][i])
-    }
+  let newneighbours = []
+  for (const cellindex of neighbours){
+    let newcellindex = cellindex.x*numY + cellindex.y;
+    
+    for (const item of simulationgrid.grid[newcellindex]){
+      newneighbours.push(item);
+    }    
   }
-  return neighbours;
+  return newneighbours;
   }
 }
 class SPHFluidSimulator {
@@ -124,7 +126,7 @@ class SPHFluidSimulator {
     this.smoothinglength = 2 * radius;
     this.restdensity = 1000;
     this.fluidconstant = 460.5;
-    this.gravity = new Vector(0,0)
+    this.gravity = new Vector(0,-10)
   }
   
 
@@ -134,7 +136,22 @@ class SPHFluidSimulator {
   }
 
   updateGrid() {
+    for (const particle of this.particles){
+      let oldindex = particle.index;
+      particle.updateCell();
+      let newindex = particle.index;
 
+      if (simulationgrid.grid[oldindex].length >1 ){
+        for (let i = 0; i< simulationgrid.grid[oldindex].length; i++){
+          if (simulationgrid.grid[oldindex][i] == particle){
+            simulationgrid.grid[oldindex].splice(i,1);
+          }
+        }
+      }
+      particle.updateCell();
+      //console.log(particle)
+      simulationgrid.grid[newindex].push(particle);
+    }
   }
   
   
@@ -161,66 +178,61 @@ class SPHFluidSimulator {
   }
   calculateDensity(particle,neighbours){
     let density = 0;
-    for (const cell of neighbours){
-      //console.log(cell)
-      let index = cell.x * numY + cell.y;
-      for (const cparticle of simulationgrid.grid[index]){
-        if (cparticle !== particle){
-          let dist = particle.position.distanceFrom(cparticle.position);
-          density += cparticle.mass*this.smoothingKernel(dist,this.smoothinglength);
+    for (const cparticle of neighbours){
+
+      if (cparticle !== particle){
+        let dist = particle.position.distanceFrom(cparticle.position);
+        density += cparticle.mass*this.smoothingKernel(dist,this.smoothinglength);
         }
-      }
     }
     particle.density = density;
-
-  }
+    }
+    
   calculatePressure(particle){
     let pressure = this.fluidconstant*(particle.density - this.restdensity);
     particle.pressure = pressure;
   }
   calculatePressureGradientX(particle,neighbours){
     let pressureGradientX = 0;
-    for (const cell of neighbours){
-      //console.log(cell)
-      let index = cell.x * numY + cell.y;
-      for (const cparticle of simulationgrid.grid[index]){
+    for (const cparticle of neighbours){
         if (cparticle !== particle){
           let dist = particle.position.x - cparticle.position.x;
-          pressureGradientX += cparticle.mass*this.derivativeOfSmoothingKernel(dist,this.smoothinglength);
+          pressureGradientX += cparticle.pressure*cparticle.mass*this.derivativeOfSmoothingKernel(dist,this.smoothinglength)/cparticle.density;
         }
       }
-    }
+    
     particle.pressureGradientX = pressureGradientX;
 
   }
   calculatePressureGradientY(particle,neighbours){
     let pressureGradientY = 0;
-    for (const cell of neighbours){
-      //console.log(cell)
-      let index = cell.x * numY + cell.y;
-      for (const cparticle of simulationgrid.grid[index]){
+    for (const cparticle of neighbours){
         if (cparticle !== particle){
-          let dist = particle.position.Y - cparticle.position.Y;
-          pressureGradientY += cparticle.mass*this.derivativeOfSmoothingKernel(dist,this.smoothinglength);
+          let dist = particle.position.y - cparticle.position.y;
+          pressureGradientY += cparticle.pressure*cparticle.mass*this.derivativeOfSmoothingKernel(dist,this.smoothinglength)/cparticle.density;
         }
-      }
     }
-    particle.pressureGradientY = pressureGradientY;
-
-  }
+    
+    particle.pressureGradientY = pressureGradienty;
   
-
+  }
+  calculatePressureForce(particle){
+    particle.pressureForceX = particle.pressureGradientX/particle.density
+    particle.pressureForceY = particle.pressureGradientY/particle.density
+  }
   updateDensitiesAndForces() {
     //Update particle densities and calculate forces (pressure, viscosity, etc.)
     for (const particle of this.particles) {
       let neighbours = simulationgrid.returnclosecells(particle);
       this.calculateDensity(particle,neighbours)
       this.calculatePressure(particle);
+      this.calculatePressureForce(particle);
+
     }
   }
   updateAcceleration(particle){
-    particle.acceleration.x = particle.pressureGradientX/particle.density + this.gravity.x;
-    particle.acceleration.y = particle.pressureGradientY/particle.density + this.gravity.y;
+    particle.acceleration.x = particle.pressureForceX + this.gravity.x;
+    particle.acceleration.y = particle.pressureForceY + this.gravity.y;
   }
   handleBoundaryCollision(particle) {
     if (particle.position.x + particle.radius > simWidth) {
@@ -245,8 +257,7 @@ class SPHFluidSimulator {
 
   integrateTimeStep() {
     for (const particle of this.particles){  
-      this.updateAcceleration(particle); 
-      let neighbours = simulationgrid.returnclosecells(particle); 
+      this.updateAcceleration(particle);  
       particle.velocity = particle.velocity.add(particle.acceleration.mulScalar(timestep))
       particle.position = particle.position.add(particle.velocity.mulScalar(timestep));
       this.handleBoundaryCollision(particle);
@@ -275,8 +286,10 @@ function setupParticlesGrid() {
 function setupParticlesRandom(){
   for (let i =0 ; i < num_particles; i++){
     x = simWidth*Math.random();
+    console.log(x)
     y= simHeight*Math.random();
     var particle = new Particle(x,y);
+    particle.position  = new Vector(x,y);
     fluidSimulator.addParticle(particle);
     
   }
@@ -302,6 +315,9 @@ function physics(){
   fluidSimulator.integrateTimeStep();
   fluidSimulator.updateGrid();
   fluidSimulator.updateDensitiesAndForces();
+  
+
+  
 }
 var simulationgrid = new Grid();
 var fluidSimulator = new SPHFluidSimulator();
